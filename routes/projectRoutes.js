@@ -19,4 +19,18 @@ router.get(
   catchErrors(projectController.returnProject)
 );
 
+router.get('/all', catchErrors(projectController.getAllProjects));
+
+router.get(
+  '/owner/:userId',
+  catchErrors(projectController.getProjectsByUserId)
+);
+
+router.get(
+  '/createdBy/:userId',
+  catchErrors(projectController.getProjectsByUserId)
+);
+
+router.get('/search', catchErrors(projectController.searchProjectsByName));
+
 module.exports = router;
