@@ -5,7 +5,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const db = require('./db');
-const { authRoutes, projectRoutes } = require('./routes');
+const { authRoutes, projectRoutes, taskRoutes } = require('./routes');
 const app = express();
 const port = 6300;
 
@@ -19,6 +19,7 @@ app.get('/', async (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/projects', projectRoutes);
+app.use('/tasks', taskRoutes);
 
 app.listen(port, () => {
   console.log(`Listening on port ${port}`);
