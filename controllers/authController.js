@@ -26,6 +26,7 @@ exports.validateSignup = async (req, res, next) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
+  // check to see if user already exists
   const { username } = req.body;
   const userQuery = getUserByUsernameQuery(username);
   const { rows } = await db.query(userQuery);
