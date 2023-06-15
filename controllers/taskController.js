@@ -19,7 +19,7 @@ exports.createTask = async (req, res, next) => {
 exports.getTaskById = async (req, res) => {
   const { taskId } = req.params;
   const query = `
-    SELECT t.task_name, t.description, t.status, t.priority,
+    SELECT t.*,
       p.id AS project_id, p.project_name,
       u1.id AS created_by_id, u1.username AS created_by_username,
       u2.id AS assignee_id, u2.username AS assignee_username
@@ -53,6 +53,19 @@ exports.getTaskById = async (req, res) => {
   res.status(200).json(formattedTask);
 };
 
+exports.getTasksByProjectId = async (req, res) => {
+  const { projectId } = req.params;
+  const query = `
+    SELECT t.*, u.username AS assignee_username
+    FROM tasks t
+    LEFT JOIN users u ON t.assignee = u.id
+    WHERE project_id = $1;
+  `;
+  const values = [projectId];
+  const { rows } = await db.query(query, values);
+  res.status(200).json(rows);
+};
+
 exports.getCurrentUserTasks = async (req, res) => {
   const { id: userId } = req.user;
   const query = `
@@ -66,4 +79,34 @@ exports.getCurrentUserTasks = async (req, res) => {
   const values = [userId];
   const { rows } = await db.query(query, values);
   res.status(400).json(rows);
+};
+
+exports.updateTask = async (req, res, next) => {
+  const { taskId } = req.params;
+  const { body } = req;
+  // todo: validate body
+  let set = Object.keys(body)
+    .map((column, idx) => `${column} = $${idx + 1}`)
+    .join(', ');
+  if (!set) {
+    return res.status(200).json({ message: 'Nothing updated' });
+  }
+  const values = Object.values(body);
+  set += `, updated_at = $${values.length + 1}`;
+
+  const query = `
+    UPDATE tasks
+    SET ${set}
+    WHERE id = $${values.length + 2}
+    RETURNING id;
+  `;
+
+  values.push(new Date());
+  values.push(parseInt(taskId));
+
+  const { rows } = await db.query(query, values);
+  // res.status(200).json(rows[0]);
+  req.params.taskId = rows[0].id;
+
+  next();
 };

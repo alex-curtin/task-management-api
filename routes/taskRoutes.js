@@ -21,4 +21,16 @@ router.get(
   catchErrors(taskController.getCurrentUserTasks)
 );
 
+router.get(
+  '/project/:projectId',
+  catchErrors(taskController.getTasksByProjectId)
+);
+
+router.put(
+  '/update/:taskId',
+  catchErrors(authController.checkAuth),
+  catchErrors(taskController.updateTask),
+  catchErrors(taskController.getTaskById)
+);
+
 module.exports = router;
