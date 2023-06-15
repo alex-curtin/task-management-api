@@ -4,8 +4,7 @@ const { body, validationResult } = require('express-validator');
 
 const db = require('../db');
 
-const getUserByUsernameQuery = username =>
-  `SELECT * FROM users WHERE username = '${username}'`;
+const getUserByUsernameQuery = `SELECT * FROM users WHERE username = $1`;
 
 const invalidCredentialsResponse = {
   errors: [{ message: 'Invalid credentials' }],
@@ -28,8 +27,8 @@ exports.validateSignup = async (req, res, next) => {
 
   // check to see if user already exists
   const { username } = req.body;
-  const userQuery = getUserByUsernameQuery(username);
-  const { rows } = await db.query(userQuery);
+  // const query = `SELECT * FROM users WHERE username = $1`;
+  const { rows } = await db.query(getUserByUsernameQuery, [username]);
   if (rows.length) {
     return res
       .status(400)
@@ -45,15 +44,13 @@ exports.signup = async (req, res, next) => {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
-  const createQuery = `
+  const query = `
     INSERT INTO users(username, password)
-    VALUES('${username}', '${hashedPassword}');
+    VALUES($1, $2)
+    RETURNING id, username;
     `;
-  await db.query(createQuery);
-
-  const userQuery = getUserByUsernameQuery(username);
-
-  const { rows } = await db.query(userQuery);
+  const values = [username, hashedPassword];
+  const { rows } = await db.query(query, values);
 
   req.user = rows[0];
 
@@ -68,8 +65,7 @@ exports.validateSignin = async (req, res, next) => {
 
   const { username, password } = req.body;
 
-  const userQuery = getUserByUsernameQuery(username);
-  const userResponse = await db.query(userQuery);
+  const userResponse = await db.query(getUserByUsernameQuery, [username]);
   const user = userResponse?.rows[0];
   if (!user) {
     return res.status(401).json(invalidCredentialsResponse);

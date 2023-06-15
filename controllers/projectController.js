@@ -5,8 +5,13 @@ exports.getProjectByName = async (req, res, next) => {
   if (!name) {
     return res.status(400).json({ errors: [{ message: 'Invalid request' }] });
   }
-  const query = `SELECT * FROM projects WHERE project_name = '${name}'`;
-  const { rows } = await db.query(query);
+  const query = `
+    SELECT * FROM projects
+    LEFT JOIN users
+    ON users.id = projects.owner
+    WHERE project_name = $1
+    `;
+  const { rows } = await db.query(query, [name]);
   req.project = rows[0] || null;
 
   next();
@@ -19,7 +24,7 @@ exports.returnProject = async (req, res) => {
   res.status(200).json(req.project);
 };
 
-exports.createProject = async (req, res, next) => {
+exports.createProject = async (req, res) => {
   const { name, description } = req.body;
   const { id: userId } = req.user;
 
@@ -29,11 +34,13 @@ exports.createProject = async (req, res, next) => {
       .json({ errors: [{ message: 'Project already exists' }] });
   }
 
-  const insertQuery = `
+  const query = `
     INSERT INTO projects(project_name, description, created_by, owner)
-    VALUES ('${name}', '${description}', ${userId}, ${userId});
+    VALUES ($1, $2, $3, $4)
+    RETURNING *;
   `;
-  await db.query(insertQuery);
+  const values = [name, description, userId, userId];
+  const { rows } = await db.query(query, values);
 
-  next();
+  res.status(200).json(rows[0]);
 };

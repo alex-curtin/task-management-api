@@ -10,9 +10,7 @@ router.post(
   '/create',
   catchErrors(authController.checkAuth),
   catchErrors(projectController.getProjectByName),
-  catchErrors(projectController.createProject),
-  catchErrors(projectController.getProjectByName),
-  catchErrors(projectController.returnProject)
+  catchErrors(projectController.createProject)
 );
 
 router.get(
